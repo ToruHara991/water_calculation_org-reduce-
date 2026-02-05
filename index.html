@@ -1,0 +1,736 @@
+﻿<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>台灣自來水費試算系統 - 減免專用修正版</title>
+	<style>
+	      :root {
+	        --primary-color: #2196F3;
+	        --primary-dark: #1976D2;
+	        --success-color: #4CAF50;
+	        --danger-color: #f44336;
+	        --bg-color: #f5f5f5;
+	        --card-bg: white;
+	        --text-color: #333;
+	        --border-color: #e0e0e0;
+	      }
+
+	      body {
+	        font-family: Arial, "微軟正黑體", sans-serif;
+	        margin: 0;
+	        padding: 20px;
+	        background-color: var(--bg-color);
+	        color: var(--text-color);
+	        transition: all 0.3s ease;
+	      }
+
+	      /* 大標題樣式 */
+	      .main-header {
+	        text-align: center;
+	        margin-bottom: 30px;
+	        padding: 20px;
+	        background: var(--card-bg);
+	        border-radius: 8px;
+	        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+	      }
+	      
+	      .main-header h1 {
+	        margin: 0;
+	        color: var(--primary-color);
+	        font-size: 2.2em;
+	      }
+
+	      /* 底部說明欄樣式 */
+	      .main-footer {
+	        text-align: center;
+	        margin-top: 30px;
+	        padding: 15px;
+	        background: #e0e0e0;
+	        border-radius: 8px;
+	        color: #555;
+	        font-weight: bold;
+	      }
+	      
+	      .pending-tag {
+	        border: 2px solid var(--danger-color);
+	        color: var(--danger-color);
+	        padding: 2px 6px;
+	        border-radius: 4px;
+	        margin-right: 5px;
+	        display: inline-block;
+            font-weight: bold;
+	      }
+
+	      /* 三欄佈局容器 */
+	      .grid-container {
+	        display: grid;
+	        grid-template-columns: 1fr 1fr 1fr;
+	        gap: 20px;
+	        max-width: 1600px;
+	        margin: 0 auto;
+	      }
+
+	      @media (max-width: 1200px) {
+	        .grid-container {
+	          grid-template-columns: 1fr;
+	        }
+	      }
+
+	      /* 通用卡片樣式 */
+	      .card {
+	        background: var(--card-bg);
+	        padding: 20px;
+	        border-radius: 8px;
+	        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+	        height: fit-content;
+	        transition: transform 0.3s ease;
+	      }
+	      
+	      .card-title {
+	        border-bottom: 2px solid var(--primary-color);
+	        padding-bottom: 10px;
+	        margin-bottom: 20px;
+	        font-size: 1.3em;
+	        color: var(--primary-color);
+	        font-weight: bold;
+	        text-align: center;
+	      }
+
+	      /* 輸入框樣式 */
+	      .input-group { margin-bottom: 12px; }
+	      label { display: block; margin-bottom: 4px; font-weight: bold; font-size: 0.9em; }
+	      select, input[type="number"], input[type="date"] {
+	        width: 100%; padding: 8px; border: 1px solid var(--border-color);
+	        border-radius: 4px; box-sizing: border-box; font-size: 1em;
+	      }
+	      select:focus, input:focus {
+	        border-color: var(--primary-color); outline: none;
+	        box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+	      }
+
+	      /* 按鈕樣式 */
+	      .calculate-btn {
+	        background-color: var(--success-color); color: white; width: 100%;
+	        padding: 12px; border: none; border-radius: 4px; font-size: 1.1em;
+	        cursor: pointer; margin-top: 15px; transition: background 0.3s;
+	      }
+	      .calculate-btn:hover { background-color: #45a049; }
+
+	      /* --- 結果顯示區域通用樣式 (統一美化) --- */
+	      .result-box {
+	        margin-top: 15px;
+            /* 移除原本的背景色，改由內部區塊撐開 */
+	      }
+
+          /* 用於左右欄的內部小白卡 */
+          .bill-detail-box {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-left: 4px solid var(--primary-color);
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+          }
+
+          /* 用於顯示標題與金額的一行 */
+          .bill-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 4px;
+          }
+
+          .bill-row.main {
+            font-weight: bold;
+            color: #333;
+            font-size: 1.05em;
+          }
+          
+          .bill-row.sub {
+            font-size: 0.85em;
+            color: #666;
+            margin-top: 2px;
+          }
+
+          .bill-divider {
+            border-top: 1px dashed #ccc;
+            margin: 8px 0;
+          }
+
+          /* 右欄專用：運算式樣式 */
+          .math-stack {
+            text-align: right;
+            font-size: 0.95em;
+          }
+          .math-stack .original { color: #888; text-decoration: line-through; font-size: 0.9em; }
+          .math-stack .minus { color: var(--danger-color); }
+          .math-stack .result { color: #000; font-weight: bold; font-size: 1.1em; border-top: 1px solid #ccc; padding-top: 2px; margin-top: 2px; display: inline-block;}
+
+	      /* 中欄專用表格 */
+	      .calc-table {
+	        width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em;
+	      }
+	      .calc-table th, .calc-table td { border: 1px solid #ddd; padding: 4px; text-align: center; }
+	      .calc-table th { background-color: #eee; font-size: 0.85em; }
+	      .calc-table .highlight-cell { background-color: #fff176; font-weight: bold; }
+          .section-divider { border-top: 2px dashed #bbb; margin: 15px 0; position: relative; }
+          .section-divider span {
+            position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
+            background: var(--card-bg); padding: 0 10px; color: #777; font-size: 0.8em;
+          }
+
+	      .final-total {
+	        background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-top: 20px;
+            border: 2px solid #ffcdd2;
+	      }
+
+	      .tooltip {
+	        position: relative;
+	        display: inline-block;
+	        cursor: pointer;
+	        font-size: 1.2em;
+	        color: #4CAF50;
+	        margin-left: 5px;
+	      }
+
+	      .tooltip .tooltip-text {
+	        visibility: hidden;
+	        width: 250px;
+	        background-color: #555;
+	        color: #fff;
+	        text-align: center;
+	        border-radius: 6px;
+	        padding: 8px;
+	        position: absolute;
+	        z-index: 1;
+	        bottom: 125%;
+	        left: 50%;
+	        margin-left: -125px;
+	        opacity: 0;
+	        transition: opacity 0.3s;
+	      }
+	      .tooltip .tooltip-text::after {
+	        content: "";
+	        position: absolute;
+	        top: 100%;
+	        left: 50%;
+	        margin-left: -5px;
+	        border-width: 5px;
+	        border-style: solid;
+	        border-color: #555 transparent transparent transparent;
+	      }
+	      .tooltip:hover .tooltip-text {
+	        visibility: visible;
+	        opacity: 1;
+	      }
+
+	      /* 暗色主題 */
+	      body.dark-theme {
+	        --bg-color: #222; --card-bg: #333; --text-color: #eee; --border-color: #555;
+	      }
+	      body.dark-theme .bill-detail-box { background-color: #424242; border-color: #555; border-left-color: var(--primary-color); }
+          body.dark-theme .result-box, body.dark-theme select, body.dark-theme input { background-color: #444; color: #eee; }
+          body.dark-theme .calc-table th { background-color: #555; }
+          body.dark-theme .bill-row.main { color: #eee; }
+          body.dark-theme .bill-row.sub, body.dark-theme .math-stack .original { color: #aaa; }
+          body.dark-theme .math-stack .result { color: #fff; }
+          body.dark-theme .final-total { background-color: #3e2723; color: #ffcdd2; border-color: #5d4037; }
+	</style>
+</head>
+<body>
+
+	<div class="main-header">
+		<h1>台灣自來水費試算系統 <small style="font-size: 0.5em; color: #666;">(日減免試算版)</small></h1>
+        <button onclick="document.body.classList.toggle('dark-theme')" style="padding: 5px 10px; cursor: pointer;">切換深色模式</button>
+	</div>
+
+	<div class="grid-container">
+		
+        <div class="card">
+			<div class="card-title">1. 當期原始水費</div>
+			
+			<div class="input-group">
+				<label>用水類別：</label> 
+				<select id="userType">
+					<option value="normal">一般用水</option>
+					<option value="military">軍眷用水</option>
+					<option value="municipal">市政用水</option>
+					<option value="Temporary">臨時用水(農業、空地)</option>
+					<option value="illegal">違章用水(93)</option>
+					<option value="discounted">優惠用水(國小、國中)</option>
+				</select>
+			</div>
+			
+			<div class="input-group">
+				<label>水表口徑：</label> 
+				<select id="meterSize">
+					<option value="13">13mm</option>
+					<option value="20">20mm</option>
+					<option value="25" selected>25mm</option>
+					<option value="40">40mm</option>
+					<option value="50">50mm</option>
+					<option value="75">75mm</option>
+					<option value="100">100mm</option>
+				</select>
+			</div>
+
+			<div class="input-group">
+				<label>當期實際用水度數 (度)：</label> 
+				<input id="waterUsage" type="number" min="0" step="1" placeholder="輸入當期度數" value="0">
+			</div>
+
+			<div class="input-group">
+				<label>分攤度數 (度)：</label> 
+				<input id="sharedUsage" type="number" min="0" value="0">
+			</div>
+            
+            <div class="input-group">
+				<label>清除處理費費率 (元/度)：</label> 
+				<input id="WasteDisposalRate" type="number" step="0.1" value="3.7">
+				<span class="tooltip">❓ <span class="tooltip-text">清除處理費只計算實際用水度數，不包含分攤度數</span></span>
+			</div>
+            
+             <div class="input-group">
+				<label>污水下水道使用費率 (元/度)：</label> 
+				<input id="SewageSewerRate" type="number" step="0.1" value="5">
+				<span class="tooltip">❓ <span class="tooltip-text">污水下水道使用費計算，包含分攤度數</span></span>
+			</div>
+
+            <div class="input-group">
+				<label>水源保育與回饋費率：</label> 
+				<select id="wrccfRate">
+                    <option value="0">免徵</option>
+                    <option value="0.05" selected>5%</option>
+                    <option value="0.10">10%</option>
+                </select>
+			</div>
+            
+            <div class="input-group">
+                <label>抄表頻率：</label>
+                <select id="billingCycle">
+                    <option value="bimonthly">隔月抄表</option>
+                    <option value="monthly">每月抄表</option>
+                </select>
+            </div>
+
+			<div id="resultLeft" class="result-box" style="display:none;"></div>
+		</div>
+
+        <div class="card">
+			<div class="card-title">2. 減免水費額度</div>
+            <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; font-size: 0.85em; margin-bottom: 15px; color:#0d47a1;">
+                <strong>邏輯說明：</strong><br>
+                1. <strong>基本費</strong>：採「前一期基本費」為基準。<br>
+                2. <strong>用水費</strong>：採「前一期總度數」算出的費用為基準。
+            </div>
+
+			<div class="input-group">
+				<label>前一期用水區間 (起)：</label> 
+				<input id="prevDateStart" type="date" value="2025-09-11">
+			</div>
+			
+			<div class="input-group">
+				<label>前一期用水區間 (訖)：</label> 
+				<input id="prevDateEnd" type="date" value="2025-11-13">
+			</div>
+            
+            <div class="input-group">
+                <label>前一期總度數 (含分攤)：</label>
+                <input id="prevTotalUsage" type="number" min="0" value="46" style="border: 2px solid #2196F3; background-color: #e3f2fd;">
+            </div>
+
+			<div class="input-group">
+				<label>減免天數 (日)：</label> 
+				<input id="reductionDays" type="number" min="0" value="15" style="border: 2px solid #f32121; background-color: #fde5e3;">
+			</div>
+
+			<button class="calculate-btn" onclick="calculateAll()">開始試算</button>
+
+			<div id="resultMiddle" class="result-box" style="display:none;"></div>
+		</div>
+
+        <div class="card">
+			<div class="card-title">3. 最終水費帳單</div>
+			
+			<div id="resultRight" class="result-box" style="display:none;">
+				<p style="text-align:center; color:#666; padding: 20px;">請先點擊中間的「開始試算」</p>
+			</div>
+		</div>
+
+	</div>
+
+	<div class="main-footer">
+		<span class="pending-tag">【待補】</span> 請見諒
+	</div>
+
+	<script>
+        // --- 基礎數據定義 (沿用原版) ---
+        const baseFeeTable = {
+            "13": 34, "20": 68, "25": 126, "40": 374, "50": 680,
+            "75": 1836, "100": 3638, "150": 10098, "200": 20060,
+            "250": 35428, "300": 55590
+        };
+        const normalRatesMonthly = [
+            { range: [1, 10], price: 7 }, { range: [11, 30], price: 9 },
+            { range: [31, 50], price: 11 }, { range: [51, Infinity], price: 11.5 }
+        ];
+        const normalRatesBimonthly = [
+            { range: [1, 20], price: 7 }, { range: [21, 60], price: 9 },
+            { range: [61, 100], price: 11 }, { range: [101, Infinity], price: 11.5 }
+        ];
+        const userTypes = {
+            normal: { label: "一般用水", baseFeeDiscount: 1, waterFeeDiscount: 1 },
+            military: { label: "軍眷用水", baseFeeDiscount: 0.5, waterFeeDiscount: "first40half" },
+            municipal: { label: "市政用水", baseFeeDiscount: 0.5, waterFeeDiscount: 0.5 },
+            Temporary: { label: "臨時用水", baseFeeDiscount: 1.5, waterFeeDiscount: 1.5 },
+            illegal: { label: "違章用水", baseFeeDiscount: 1.2, waterFeeDiscount: 1.2 },
+            discounted: { label: "優惠用水", baseFeeDiscount: 1, waterFeeFlatRate: 7 }
+        };
+
+        function formatMoney(amount) {
+            return Math.round(amount).toLocaleString("zh-TW", { style: "currency", currency: "TWD", minimumFractionDigits: 0 });
+        }
+        
+        function roundTwo(num) {
+            return Math.round((num + Number.EPSILON) * 100) / 100;
+        }
+
+        // --- 主計算控制器 ---
+        function calculateAll() {
+            const leftData = calculateOriginalBill();
+            if (!leftData) return; 
+            
+            renderLeftColumn(leftData);
+            const middleData = calculateReduction(leftData);
+            renderMiddleColumn(middleData);
+            renderRightColumn(leftData, middleData);
+            
+            document.getElementById('resultLeft').style.display = 'block';
+            document.getElementById('resultMiddle').style.display = 'block';
+            document.getElementById('resultRight').style.display = 'block';
+        }
+
+        // --- 核心邏輯：計算單純的用水費 ---
+        function calculatePureWaterFee(totalUsage, userTypeKey, isMonthly) {
+            const userType = userTypes[userTypeKey];
+            let rawRates = isMonthly ? normalRatesMonthly : normalRatesBimonthly;
+            let waterRates;
+
+            if (userType.waterFeeFlatRate !== undefined) {
+                waterRates = [{ range: [1, Infinity], price: userType.waterFeeFlatRate, military: false }];
+            } else if (userType.waterFeeDiscount === "first40half") {
+                waterRates = getMilitaryRates(rawRates, isMonthly);
+            } else {
+                waterRates = rawRates.map(r => ({
+                    ...r,
+                    price: r.price * userType.waterFeeDiscount,
+                    military: false
+                }));
+            }
+
+            let fee = 0;
+            let breakdown = [];
+            let remaining = totalUsage;
+            
+            for (const { range, price, military } of waterRates) {
+                const [min, max] = range;
+                if (totalUsage >= min) {
+                    const usageInTier = Math.min(remaining, (max === Infinity ? remaining : (max - min + 1)));
+                    const tierFee = usageInTier * price;
+                    breakdown.push({
+                        range: `${min}-${max === Infinity ? "以上" : max}度`,
+                        usage: usageInTier,
+                        rate: price,
+                        fee: tierFee,
+                        military
+                    });
+                    fee += tierFee;
+                    remaining -= usageInTier;
+                    if (remaining <= 0) break;
+                }
+            }
+            return { fee, breakdown, rates: rawRates };
+        }
+
+        // --- 邏輯：計算左區塊 ---
+        function calculateOriginalBill() {
+            const meterSize = document.getElementById("meterSize").value;
+            const realUsage = parseFloat(document.getElementById("waterUsage").value) || 0;
+            const sharedUsage = parseFloat(document.getElementById("sharedUsage").value) || 0;
+            const totalUsage = realUsage + sharedUsage;
+            const userTypeKey = document.getElementById("userType").value;
+            const userType = userTypes[userTypeKey];
+            const billingCycle = document.getElementById("billingCycle").value;
+            const isMonthly = billingCycle === "monthly";
+            
+            const WDR = parseFloat(document.getElementById("WasteDisposalRate").value) || 0;
+            const SSR = parseFloat(document.getElementById("SewageSewerRate").value) || 0;
+            const wrccfRate = parseFloat(document.getElementById("wrccfRate").value) || 0;
+
+            let baseFeeOriginal = baseFeeTable[meterSize];
+            let baseFee = baseFeeOriginal * userType.baseFeeDiscount;
+            if (isMonthly) baseFee *= 0.5;
+            const baseTax = baseFee * 0.05;
+
+            const waterCalcs = calculatePureWaterFee(totalUsage, userTypeKey, isMonthly);
+            const waterFee = waterCalcs.fee;
+            const waterTax = waterFee * 0.05;
+
+            const unDiscountedWaterFee = calculateUnDiscountedFee(totalUsage, waterCalcs.rates);
+            const WRCCF = Math.round(unDiscountedWaterFee * wrccfRate);
+            const WDT = Math.round(realUsage * WDR);
+            const SST = Math.round(totalUsage * SSR);
+            
+            return {
+    			baseFee, baseTax, waterFee, waterTax,
+    			WDT, SST, WRCCF,
+   			breakdown: waterCalcs.breakdown,
+    			totalUsage,
+   			userTypeLabel: userType.label,
+    			meterSize,
+    			userTypeKey,
+    			isMonthly,
+   			realUsage,
+    			unDiscountedWaterFee,
+    			WDR,
+    			SSR
+            };
+        }
+
+        // --- 邏輯：計算中區塊 ---
+        function calculateReduction(currentBill) {
+            const dateStart = new Date(document.getElementById("prevDateStart").value);
+            const dateEnd = new Date(document.getElementById("prevDateEnd").value);
+            const reductionDaysInput = parseInt(document.getElementById("reductionDays").value) || 0;
+            const prevTotalUsage = parseFloat(document.getElementById("prevTotalUsage").value) || 0;
+            
+            const timeDiff = dateEnd.getTime() - dateStart.getTime();
+            const periodDays = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1;
+            
+            if (periodDays <= 0 || isNaN(periodDays)) {
+                alert("日期設定錯誤，請檢查前一期區間");
+                return null;
+            }
+
+            const dailyAvgBase = roundTwo(currentBill.baseFee / periodDays);
+            const reductionBasePreTax = Math.round(dailyAvgBase * reductionDaysInput); 
+            const reductionBaseIncTax = roundTwo(reductionBasePreTax * 1.05);
+
+            const prevWaterCalcs = calculatePureWaterFee(prevTotalUsage, currentBill.userTypeKey, currentBill.isMonthly);
+            const prevWaterFee = prevWaterCalcs.fee; 
+
+            const dailyAvgWater = roundTwo(prevWaterFee / periodDays);
+            const reductionWaterPreTax = Math.round(dailyAvgWater * reductionDaysInput);
+            const reductionWaterIncTax = roundTwo(reductionWaterPreTax * 1.05);
+            
+            return {
+		    baseFee: currentBill.baseFee,
+                periodDays, reductionDaysInput,
+                dateStr: `${formatDate(dateStart)} - ${formatDate(dateEnd)}`,
+                prevTotalUsage, prevWaterFee, 
+                prevBreakdown: prevWaterCalcs.breakdown,
+                base: { daily: dailyAvgBase, preTax: reductionBasePreTax, incTax: reductionBaseIncTax },
+                water: { daily: dailyAvgWater, preTax: reductionWaterPreTax, incTax: reductionWaterIncTax }
+            };
+        }
+
+        // --- 渲染：左欄 (Unified Style) ---
+        function renderLeftColumn(data) {
+            const totalFee = Math.round(data.baseFee + data.baseTax + data.waterFee + data.waterTax + data.WDT + data.WRCCF + data.SST);
+            
+            const html = `
+                <div class="bill-detail-box">
+                    <div class="bill-row main">
+                        <span>基本費</span>
+                        <span>${data.baseFee} 元</span>
+                    </div>
+                    <div class="bill-row sub">
+                        <span>營業稅</span>
+                        <span>${roundTwo(data.baseTax)} 元</span>
+                    </div>
+                </div>
+                
+                <div class="bill-detail-box">
+                    <div class="bill-row main" style="margin-bottom:8px;">
+                        <span>用水費 <small style="font-weight:normal; color:#666;">(總度數 ${data.totalUsage})</small></span>
+                        <span>${data.waterFee} 元</span>
+                    </div>
+                    
+                    ${data.breakdown.map(item => `
+                        <div class="bill-row sub" style="margin-bottom:2px;">
+                            <span>▪ ${item.range}</span>
+                            <span>${item.usage}度 × ${item.rate} = ${Math.round(item.fee)}</span>
+                        </div>
+                    `).join('')}
+                    
+                    <div class="bill-divider"></div>
+                    <div class="bill-row sub">
+                        <span>營業稅</span>
+                        <span>${roundTwo(data.waterTax)} 元</span>
+                    </div>
+                </div>
+                
+                <div class="bill-detail-box" style="border-left-color: #607d8b;">
+                    <div class="bill-row main" style="color: #455a64;">
+                        <span>代徵費用</span>
+                        <span>${data.WDT + data.WRCCF + data.SST} 元</span>
+                    </div>
+                    <div class="bill-divider"></div>
+                    <div class="bill-row sub">
+                        <span>清除處理費（不含分攤度數）:  ${data.WDR} × ${document.getElementById("waterUsage").value}度</span>
+                        <span>${data.WDT} 元</span>
+                    </div>
+                    <div class="bill-row sub">
+                        <span>水源保育費:  ${data.unDiscountedWaterFee} × ${document.getElementById("wrccfRate").selectedOptions[0].text}</span>
+                        <span>${data.WRCCF} 元</span>
+                    </div>
+                    <div class="bill-row sub">
+                        <span>污水下水道使用費（總用水度數）： ${data.SSR} × ${data.totalUsage}度</span>
+                        <span>${data.SST} 元</span>
+                    </div>
+                </div>
+                
+                <div class="final-total" style="background:#e3f2fd; color:#0d47a1; border-color:#bbdefb; font-size:1.1em; padding:10px;">
+                    原始總計：${formatMoney(totalFee)}
+                </div>
+            `;
+            document.getElementById('resultLeft').innerHTML = html;
+        }
+
+        // --- 渲染：中欄 (Keep logic, just minor text fix) ---
+        function renderMiddleColumn(data) {
+            if (!data) return;
+            
+            const html = `
+                <div class="breakdown-item">
+                    <strong>1. 用水天數計算：</strong><br>
+                    ${data.dateStr} = <span style="color:blue; font-weight:bold;">${data.periodDays}</span> 日
+                </div>
+
+                <div class="section-divider"><span>前一期費用試算</span></div>
+
+                <div class="breakdown-item" style="background:#fffde7;">
+                    <strong>前一期用水費 (度數 ${data.prevTotalUsage})：</strong>
+                    <div style="font-size:0.85em; color:#555;">
+                    ${data.prevBreakdown.map(item => `
+                        ${item.range}：${item.usage}度 × ${item.rate}元 = ${Math.round(item.fee)}<br>
+                    `).join('')}
+                    <strong>合計：${data.prevWaterFee} 元</strong>
+                    </div>
+                </div>
+                
+                <div class="section-divider"><span>減免額度計算</span></div>
+
+                <table class="calc-table">
+                    <caption><strong>基本費減免</strong></caption>
+                    <tr><th>項目</th><th>數值</th><th>備註</th></tr>
+                    <tr><td>日平均~未稅(A)</td><td>${data.base.daily}</td><td><span style="color:blue;">基本費${data.baseFee}</span>/ ${data.periodDays}</td></tr>
+                    <tr class="highlight-cell"><td>減免額(未稅)=日平均(A)×減免天數 (日)</td><td>${data.base.preTax}</td><td>A × <span  style="color:red;">${data.reductionDaysInput}</span>天</td></tr>
+                    <tr><td>含稅金額</td><td style="color:red;">${data.base.incTax}</td><td>× 1.05</td></tr>
+                </table>
+                
+                <table class="calc-table">
+                    <caption><strong>用水費減免</strong></caption>
+                    <tr><th>項目</th><th>數值</th><th>備註</th></tr>
+                    <tr><td>日平均~未稅(A)</td><td>${data.water.daily}</td><td><span style="color:blue;">前期水費${data.prevWaterFee}</span> / ${data.periodDays}</td></tr>
+                    <tr class="highlight-cell"><td>減免額(未稅)=日平均(A)×減免天數 (日)</td><td>${data.water.preTax}</td><td>A × <span  style="color:red;">${data.reductionDaysInput}天</span></td></tr>
+                    <tr><td>含稅金額</td><td style="color:red;">${data.water.incTax}</td><td>× 1.05</td></tr>
+                </table>
+            `;
+            document.getElementById('resultMiddle').innerHTML = html;
+        }
+
+        // --- 渲染：右欄 (Unified Style) ---
+        function renderRightColumn(orig, red) {
+            if (!red) return;
+
+            const finalBase = (orig.baseFee + orig.baseTax) - red.base.incTax;
+            const finalWater = (orig.waterFee + orig.waterTax) - red.water.incTax;
+            const levies = orig.WDT + orig.WRCCF + orig.SST;
+            
+            const finalTotal = Math.round(finalBase + finalWater + levies);
+
+            const html = `
+                <div class="bill-detail-box">
+                    <div class="bill-row main">
+                        <span>基本費 (減免後)</span>
+                    </div>
+                    <div class="math-stack">
+                        <div >原始(含稅)：${formatMoney(orig.baseFee + orig.baseTax)}</div>
+                        <div class="minus">- 減免：${red.base.incTax}</div>
+                        <div class="result">${formatMoney(finalBase)}</div>
+                    </div>
+                </div>
+
+                <div class="bill-detail-box">
+                    <div class="bill-row main">
+                        <span>用水費 (減免後)</span>
+                    </div>
+                    <div class="math-stack">
+                        <div >原始(含稅)：${formatMoney(orig.waterFee + orig.waterTax)}</div>
+                        <div class="minus">- 減免：${red.water.incTax}</div>
+                        <div class="result">${formatMoney(finalWater)}</div>
+                    </div>
+                </div>
+
+                <div class="bill-detail-box" style="border-left-color: #607d8b;">
+                    <div class="bill-row main">
+                        <span>代徵費用 (無變動)</span>
+                    </div>
+                    <div class="math-stack">
+                         <div style="font-size:0.9em; color:#666; margin-bottom:2px;">
+                            (清除${orig.WDT} + 保育${orig.WRCCF} + 污水${orig.SST})
+                         </div>
+                         <div class="result">${formatMoney(levies)}</div>
+                    </div>
+                </div>
+
+                <div class="final-total">
+                    應繳總金額：${formatMoney(finalTotal)}
+                </div>
+            `;
+            document.getElementById('resultRight').innerHTML = html;
+        }
+
+        // --- 輔助函數 ---
+        function formatDate(date) { return `${date.getMonth()+1}/${date.getDate()}`; }
+        function calculateUnDiscountedFee(totalUsage, rates) {
+            let fee = 0; let remaining = totalUsage;
+            for (const { range, price } of rates) {
+                const [min, max] = range;
+                if (totalUsage >= min) {
+                    const usage = Math.min(remaining, (max === Infinity ? remaining : max - min + 1));
+                    fee += usage * price; remaining -= usage;
+                    if (remaining <= 0) break;
+                }
+            } return fee;
+        }
+        function getMilitaryRates(rates, isMonthly) {
+            const halfPriceLimit = isMonthly ? 20 : 40; let accumulatedUsage = 0; const result = [];
+            for (const { range, price } of rates) {
+                const [min, max] = range;
+                if (accumulatedUsage < halfPriceLimit) {
+                    const startRange = min; const remainingHalfPrice = halfPriceLimit - accumulatedUsage;
+                    const rangeSize = max === Infinity ? Infinity : max - min + 1;
+                    const halfPriceUsage = Math.min(remainingHalfPrice, rangeSize);
+                    if (halfPriceUsage > 0) {
+                        result.push({ range: [startRange, startRange + halfPriceUsage - 1], price: price / 2, military: true });
+                        accumulatedUsage += halfPriceUsage;
+                    }
+                    if (max !== Infinity && startRange + halfPriceUsage - 1 < max) {
+                        result.push({ range: [startRange + halfPriceUsage, max], price: price, military: false });
+                    }
+                } else { result.push({ range: [min, max], price: price, military: false }); }
+            } return result;
+        }
+	</script>
+</body>
+</html>
