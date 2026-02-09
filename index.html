@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>台灣自來水費試算系統 - 減免專用修正版</title>
+	<title>台灣自來水費試算系統 - 深色優化版</title>
 	<style>
 	      :root {
 	        --primary-color: #2196F3;
@@ -14,6 +14,11 @@
 	        --card-bg: white;
 	        --text-color: #333;
 	        --border-color: #e0e0e0;
+            --input-bg: #fff;
+            --highlight-bg: #fff176;
+            --highlight-text: #000;
+            --info-box-bg: #e3f2fd;
+            --info-box-text: #0d47a1;
 	      }
 
 	      body {
@@ -22,7 +27,7 @@
 	        padding: 20px;
 	        background-color: var(--bg-color);
 	        color: var(--text-color);
-	        transition: all 0.3s ease;
+	        transition: background-color 0.3s ease, color 0.3s ease;
 	      }
 
 	      /* 大標題樣式 */
@@ -84,7 +89,7 @@
 	        border-radius: 8px;
 	        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
 	        height: fit-content;
-	        transition: transform 0.3s ease;
+	        transition: background-color 0.3s ease;
 	      }
 	      
 	      .card-title {
@@ -103,6 +108,8 @@
 	      select, input[type="number"], input[type="date"] {
 	        width: 100%; padding: 8px; border: 1px solid var(--border-color);
 	        border-radius: 4px; box-sizing: border-box; font-size: 1em;
+            background-color: var(--input-bg);
+            color: var(--text-color);
 	      }
 	      select:focus, input:focus {
 	        border-color: var(--primary-color); outline: none;
@@ -117,11 +124,8 @@
 	      }
 	      .calculate-btn:hover { background-color: #45a049; }
 
-	      /* --- 結果顯示區域通用樣式 (統一美化) --- */
-	      .result-box {
-	        margin-top: 15px;
-            /* 移除原本的背景色，改由內部區塊撐開 */
-	      }
+	      /* --- 結果顯示區域通用樣式 --- */
+	      .result-box { margin-top: 15px; }
 
           /* 用於左右欄的內部小白卡 */
           .bill-detail-box {
@@ -133,7 +137,6 @@
             border-radius: 4px;
           }
 
-          /* 用於顯示標題與金額的一行 */
           .bill-row {
             display: flex;
             justify-content: space-between;
@@ -141,28 +144,12 @@
             margin-bottom: 4px;
           }
 
-          .bill-row.main {
-            font-weight: bold;
-            color: #333;
-            font-size: 1.05em;
-          }
-          
-          .bill-row.sub {
-            font-size: 0.85em;
-            color: #666;
-            margin-top: 2px;
-          }
-
-          .bill-divider {
-            border-top: 1px dashed #ccc;
-            margin: 8px 0;
-          }
+          .bill-row.main { font-weight: bold; color: #333; font-size: 1.05em; }
+          .bill-row.sub { font-size: 0.85em; color: #666; margin-top: 2px; }
+          .bill-divider { border-top: 1px dashed #ccc; margin: 8px 0; }
 
           /* 右欄專用：運算式樣式 */
-          .math-stack {
-            text-align: right;
-            font-size: 0.95em;
-          }
+          .math-stack { text-align: right; font-size: 0.95em; }
           .math-stack .original { color: #888; text-decoration: line-through; font-size: 0.9em; }
           .math-stack .minus { color: var(--danger-color); }
           .math-stack .result { color: #000; font-weight: bold; font-size: 1.1em; border-top: 1px solid #ccc; padding-top: 2px; margin-top: 2px; display: inline-block;}
@@ -171,9 +158,16 @@
 	      .calc-table {
 	        width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.9em;
 	      }
-	      .calc-table th, .calc-table td { border: 1px solid #ddd; padding: 4px; text-align: center; }
+	      .calc-table th, .calc-table td { border: 1px solid var(--border-color); padding: 8px; text-align: center; }
 	      .calc-table th { background-color: #eee; font-size: 0.85em; }
-	      .calc-table .highlight-cell { background-color: #fff176; font-weight: bold; }
+	      
+          /* 表格高亮樣式 (變數化) */
+          .calc-table .highlight-cell { 
+              background-color: var(--highlight-bg); 
+              color: var(--highlight-text);
+              font-weight: bold; 
+          }
+          
           .section-divider { border-top: 2px dashed #bbb; margin: 15px 0; position: relative; }
           .section-divider span {
             position: absolute; top: -12px; left: 50%; transform: translateX(-50%);
@@ -181,75 +175,129 @@
           }
 
 	      .final-total {
-	        background: #ffebee;
-            color: #c62828;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            font-size: 1.3em;
-            font-weight: bold;
-            margin-top: 20px;
-            border: 2px solid #ffcdd2;
+	        background: #ffebee; color: #c62828; padding: 15px;
+            border-radius: 8px; text-align: center; font-size: 1.3em;
+            font-weight: bold; margin-top: 20px; border: 2px solid #ffcdd2;
 	      }
 
-	      .tooltip {
-	        position: relative;
-	        display: inline-block;
-	        cursor: pointer;
-	        font-size: 1.2em;
-	        color: #4CAF50;
-	        margin-left: 5px;
-	      }
+          /* 邏輯說明區塊 (藍色) */
+          .logic-info-box {
+              background: var(--info-box-bg);
+              color: var(--info-box-text);
+              padding: 10px;
+              border-radius: 4px;
+              font-size: 0.85em;
+              margin-bottom: 15px;
+          }
 
+	      .tooltip { position: relative; display: inline-block; cursor: pointer; font-size: 1.2em; color: #4CAF50; margin-left: 5px; }
 	      .tooltip .tooltip-text {
-	        visibility: hidden;
-	        width: 250px;
-	        background-color: #555;
-	        color: #fff;
-	        text-align: center;
-	        border-radius: 6px;
-	        padding: 8px;
-	        position: absolute;
-	        z-index: 1;
-	        bottom: 125%;
-	        left: 50%;
-	        margin-left: -125px;
-	        opacity: 0;
-	        transition: opacity 0.3s;
+	        visibility: hidden; width: 250px; background-color: #555; color: #fff;
+	        text-align: center; border-radius: 6px; padding: 8px; position: absolute;
+	        z-index: 1; bottom: 125%; left: 50%; margin-left: -125px; opacity: 0; transition: opacity 0.3s;
 	      }
 	      .tooltip .tooltip-text::after {
-	        content: "";
-	        position: absolute;
-	        top: 100%;
-	        left: 50%;
-	        margin-left: -5px;
-	        border-width: 5px;
-	        border-style: solid;
-	        border-color: #555 transparent transparent transparent;
+	        content: ""; position: absolute; top: 100%; left: 50%; margin-left: -5px;
+	        border-width: 5px; border-style: solid; border-color: #555 transparent transparent transparent;
 	      }
-	      .tooltip:hover .tooltip-text {
-	        visibility: visible;
-	        opacity: 1;
+	      .tooltip:hover .tooltip-text { visibility: visible; opacity: 1; }
+
+	      /* =========================================
+             🌙 精緻暗色主題 (Dark Theme) 優化版
+             ========================================= */
+	      body.dark-theme {
+	        --bg-color: #121212;          /* 更深的背景，避免純黑死板 */
+            --card-bg: #1e1e1e;           /* 卡片深灰 */
+            --text-color: #e0e0e0;        /* 柔和白 */
+            --border-color: #333;         /* 深色邊框 */
+            --input-bg: #2c2c2c;          /* 輸入框背景 */
+            
+            /* 高亮色調整：避免暗底上出現刺眼黃 */
+            --highlight-bg: rgba(255, 235, 59, 0.15); 
+            --highlight-text: #fff9c4;
+            
+            /* 資訊框調整 */
+            --info-box-bg: #1a237e;       /* 深藍底 */
+            --info-box-text: #bbdefb;     /* 淺藍字 */
 	      }
 
-	      /* 暗色主題 */
-	      body.dark-theme {
-	        --bg-color: #222; --card-bg: #333; --text-color: #eee; --border-color: #555;
-	      }
-	      body.dark-theme .bill-detail-box { background-color: #424242; border-color: #555; border-left-color: var(--primary-color); }
-          body.dark-theme .result-box, body.dark-theme select, body.dark-theme input { background-color: #444; color: #eee; }
-          body.dark-theme .calc-table th { background-color: #555; }
+          /* 暗色模式 - 卡片與陰影 */
+          body.dark-theme .card { box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+          body.dark-theme .main-header { box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+          
+          /* 暗色模式 - 結果細節卡 (Bill Detail Box) */
+	      body.dark-theme .bill-detail-box { 
+              background-color: #262626; 
+              border-color: #444; 
+              border-left-color: var(--primary-color); 
+          }
+          
+          /* 暗色模式 - 文字顏色修正 */
           body.dark-theme .bill-row.main { color: #eee; }
-          body.dark-theme .bill-row.sub, body.dark-theme .math-stack .original { color: #aaa; }
-          body.dark-theme .math-stack .result { color: #fff; }
-          body.dark-theme .final-total { background-color: #3e2723; color: #ffcdd2; border-color: #5d4037; }
+          body.dark-theme .bill-row.sub { color: #aaa; }
+          body.dark-theme .math-stack .original { color: #777; }
+          body.dark-theme .math-stack .result { color: #fff; border-top-color: #555; }
+          
+          /* 暗色模式 - 表格優化 */
+          body.dark-theme .calc-table th { background-color: #333; color: #ddd; }
+          body.dark-theme .calc-table td { border-color: #444; }
+          /* 斑馬紋效果 */
+          body.dark-theme .calc-table tr:nth-child(even) { background-color: rgba(255,255,255,0.03); }
+
+          /* 暗色模式 - 強制覆蓋內聯顏色 (Inline Styles Override) */
+          /* 1. 將原本 JS 產生的深藍色/紅色文字轉為亮色，增加可讀性 */
+          body.dark-theme span[style*="color:blue"], 
+          body.dark-theme span[style*="color: blue"],
+          body.dark-theme span[style*="color:#0d47a1"] { 
+              color: #64b5f6 !important; 
+          }
+          
+          body.dark-theme span[style*="color:red"],
+          body.dark-theme span[style*="color: red"],
+          body.dark-theme span[style*="color:#c62828"] { 
+              color: #ff8a80 !important; 
+          }
+
+          /* 2. 特別優化：前一期總度數 (原本是淺藍底+深藍框) */
+          body.dark-theme #prevTotalUsage {
+              background-color: rgba(33, 150, 243, 0.15) !important; /* 透明藍 */
+              border-color: #42a5f5 !important; /* 亮藍框 */
+              color: #fff !important;
+              box-shadow: 0 0 5px rgba(33, 150, 243, 0.3);
+          }
+
+          /* 3. 特別優化：減免天數 (原本是淺紅底+深紅框) */
+          body.dark-theme #reductionDays {
+              background-color: rgba(244, 67, 54, 0.15) !important; /* 透明紅 */
+              border-color: #ef5350 !important; /* 亮紅框 */
+              color: #fff !important;
+              box-shadow: 0 0 5px rgba(244, 67, 54, 0.3);
+          }
+
+          /* 4. 特別優化：前一期費用試算黃色區塊 */
+          body.dark-theme div[style*="background:#fffde7"] {
+              background-color: rgba(255, 235, 59, 0.05) !important;
+              border: 1px solid #444;
+          }
+
+          /* 5. 最終總計區塊 */
+          body.dark-theme .final-total { 
+              background-color: #3e2723; 
+              color: #ffcdd2; 
+              border-color: #5d4037; 
+          }
+
+          body.dark-theme .main-footer {
+            background-color: #2c2c2c;
+            color: #888;
+          }
 	</style>
 </head>
 <body>
 
 	<div class="main-header">
-		<h1>台灣自來水費試算系統 <small style="font-size: 0.5em; color: #666;">(日減免試算版)</small></h1>
-        <button onclick="document.body.classList.toggle('dark-theme')" style="padding: 5px 10px; cursor: pointer;">切換深色模式</button>
+		<h1>台灣自來水費試算系統 <small style="font-size: 0.5em; opacity: 0.7;">(日減免試算版)</small></h1>
+        <button onclick="document.body.classList.toggle('dark-theme')" style="padding: 6px 15px; cursor: pointer; border-radius: 20px; border: 1px solid #ccc; background: transparent; color: inherit; font-weight: bold;">🌗 切換深色模式</button>
 	</div>
 
 	<div class="grid-container">
@@ -326,7 +374,8 @@
 
         <div class="card">
 			<div class="card-title">2. 減免水費額度</div>
-            <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; font-size: 0.85em; margin-bottom: 15px; color:#0d47a1;">
+            
+            <div class="logic-info-box">
                 <strong>邏輯說明：</strong><br>
                 1. <strong>基本費</strong>：採「前一期基本費」為基準。<br>
                 2. <strong>用水費</strong>：採「前一期總度數」算出的費用為基準。<br>
@@ -347,12 +396,12 @@
             
             <div class="input-group">
                 <label>前一期總度數 (含分攤)：</label>
-                <input id="prevTotalUsage" type="number" min="0" value="46" style="border: 2px solid #2196F3; background-color: #e3f2fd;">
+                <input id="prevTotalUsage" type="number" min="0" value="46" style="border: 2px solid #1f1bf5; background-color: #e3f2fd;">
             </div>
 
 			<div class="input-group">
 				<label>減免天數 (日)：</label> 
-				<input id="reductionDays" type="number" min="0" value="15" style="border: 2px solid #f32121; background-color: #fde5e3;">
+                <input id="reductionDays" type="number" min="0" value="15" style="border: 2px solid #f32121; background-color: #fde5e3;">
 			</div>
 
 			<button class="calculate-btn" onclick="calculateAll()">開始試算</button>
@@ -364,7 +413,7 @@
 			<div class="card-title">3. 最終水費帳單</div>
 			
 			<div id="resultRight" class="result-box" style="display:none;">
-				<p style="text-align:center; color:#666; padding: 20px;">請先點擊中間的「開始試算」</p>
+				<p style="text-align:center; padding: 20px; opacity: 0.6;">請先點擊中間的「開始試算」</p>
 			</div>
 		</div>
 
@@ -563,7 +612,7 @@
                 
                 <div class="bill-detail-box">
                     <div class="bill-row main" style="margin-bottom:8px;">
-                        <span>用水費 <small style="font-weight:normal; color:#666;">(總度數 ${data.totalUsage})</small></span>
+                        <span>用水費 <small style="font-weight:normal; opacity:0.7;">(總度數 ${data.totalUsage})</small></span>
                         <span>${data.waterFee} 元</span>
                     </div>
                     
@@ -582,7 +631,7 @@
                 </div>
                 
                 <div class="bill-detail-box" style="border-left-color: #607d8b;">
-                    <div class="bill-row main" style="color: #455a64;">
+                    <div class="bill-row main" style="color: #607d8b;">
                         <span>代徵費用</span>
                         <span>${data.WDT + data.WRCCF + data.SST} 元</span>
                     </div>
@@ -601,7 +650,7 @@
                     </div>
                 </div>
                 
-                <div class="final-total" style="background:#e3f2fd; color:#0d47a1; border-color:#bbdefb; font-size:1.1em; padding:10px;">
+                <div class="final-total">
                     原始總計：${formatMoney(totalFee)}
                 </div>
             `;
@@ -620,13 +669,13 @@
 
                 <div class="section-divider"><span>前一期費用試算</span></div>
 
-                <div class="breakdown-item" style="background:#fffde7;">
+                <div class="breakdown-item" style="background:#fffde7; padding: 10px; border-radius:4px;">
                     <strong>前一期用水費 (度數 ${data.prevTotalUsage})：</strong>
-                    <div style="font-size:0.85em; color:#555;">
+                    <div style="font-size:0.85em; opacity:0.8;">
                     ${data.prevBreakdown.map(item => `
                         ${item.range}：${item.usage}度 × ${item.rate}元 = ${Math.round(item.fee)}<br>
                     `).join('')}
-                    <strong>合計：${data.prevWaterFee} 元</strong>
+                    <strong style="display:block; margin-top:5px;">合計：${data.prevWaterFee} 元</strong>
                     </div>
                 </div>
                 
@@ -636,16 +685,16 @@
                     <caption><strong>基本費減免</strong></caption>
                     <tr><th>項目</th><th>數值</th><th>備註</th></tr>
                     <tr><td>日平均~未稅(A)</td><td>${data.base.daily}</td><td><span style="color:blue;">基本費${data.baseFee}</span>/ ${data.periodDays}</td></tr>
-                    <tr class="highlight-cell"><td>減免額(未稅)=日平均(A)×減免天數 (日)</td><td>${data.base.preTax}</td><td>A × <span  style="color:red;">${data.reductionDaysInput}</span>天</td></tr>
-                    <tr><td>含稅金額</td><td style="color:red;">${data.base.incTax}</td><td>× 1.05</td></tr>
+                    <tr class="highlight-cell"><td>減免額(未稅)</td><td>${data.base.preTax}</td><td>A × <span  style="color:red;">${data.reductionDaysInput}</span>天</td></tr>
+                    <tr><td>含稅金額</td><td style="color:red; font-weight:bold;">${data.base.incTax}</td><td>× 1.05</td></tr>
                 </table>
                 
                 <table class="calc-table">
                     <caption><strong>用水費減免</strong></caption>
                     <tr><th>項目</th><th>數值</th><th>備註</th></tr>
                     <tr><td>日平均~未稅(A)</td><td>${data.water.daily}</td><td><span style="color:blue;">前期水費${data.prevWaterFee}</span> / ${data.periodDays}</td></tr>
-                    <tr class="highlight-cell"><td>減免額(未稅)=日平均(A)×減免天數 (日)</td><td>${data.water.preTax}</td><td>A × <span  style="color:red;">${data.reductionDaysInput}天</span></td></tr>
-                    <tr><td>含稅金額</td><td style="color:red;">${data.water.incTax}</td><td>× 1.05</td></tr>
+                    <tr class="highlight-cell"><td>減免額(未稅)</td><td>${data.water.preTax}</td><td>A × <span  style="color:red;">${data.reductionDaysInput}天</span></td></tr>
+                    <tr><td>含稅金額</td><td style="color:red; font-weight:bold;">${data.water.incTax}</td><td>× 1.05</td></tr>
                 </table>
             `;
             document.getElementById('resultMiddle').innerHTML = html;
@@ -689,7 +738,7 @@
                         <span>代徵費用 (無變動)</span>
                     </div>
                     <div class="math-stack">
-                         <div style="font-size:0.9em; color:#666; margin-bottom:2px;">
+                         <div style="font-size:0.9em; margin-bottom:2px;">
                             (清除${orig.WDT} + 保育${orig.WRCCF} + 污水${orig.SST})
                          </div>
                          <div class="result">${formatMoney(levies)}</div>
