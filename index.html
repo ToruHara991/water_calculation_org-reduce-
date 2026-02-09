@@ -399,7 +399,7 @@
         };
 
         function formatMoney(amount) {
-            return Math.round(amount).toLocaleString("zh-TW", { style: "currency", currency: "TWD", minimumFractionDigits: 0 });
+            return amount.toLocaleString("zh-TW", { style: "currency", currency: "TWD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
         
         function roundTwo(num) {
@@ -659,7 +659,7 @@
             const finalWater = (orig.waterFee + orig.waterTax) - red.water.incTax;
             const levies = orig.WDT + orig.WRCCF + orig.SST;
             
-            const finalTotal = Math.round(finalBase + finalWater + levies);
+            const finalTotal = roundTwo(finalBase + finalWater + levies);
 
             const html = `
                 <div class="bill-detail-box">
@@ -667,9 +667,9 @@
                         <span>基本費 (減免後)</span>
                     </div>
                     <div class="math-stack">
-                        <div >原始(含稅)：${formatMoney(orig.baseFee + orig.baseTax)}</div>
-                        <div class="minus">- 減免：${red.base.incTax}</div>
-                        <div class="result">${formatMoney(finalBase)}</div>
+                        <div >原始(含稅)：${formatMoney(orig.baseFee + roundTwo(orig.baseTax))}</div>
+                        <div class="minus">- 減免：${formatMoney(red.base.incTax)}</div>
+                        <div class="result">${formatMoney(roundTwo(finalBase))}</div>
                     </div>
                 </div>
 
@@ -678,9 +678,9 @@
                         <span>用水費 (減免後)</span>
                     </div>
                     <div class="math-stack">
-                        <div >原始(含稅)：${formatMoney(orig.waterFee + orig.waterTax)}</div>
-                        <div class="minus">- 減免：${red.water.incTax}</div>
-                        <div class="result">${formatMoney(finalWater)}</div>
+                        <div >原始(含稅)：${formatMoney(orig.waterFee + roundTwo(orig.waterTax))}</div>
+                        <div class="minus">- 減免：${formatMoney(red.water.incTax)}</div>
+                        <div class="result">${formatMoney(roundTwo(finalWater))}</div>
                     </div>
                 </div>
 
